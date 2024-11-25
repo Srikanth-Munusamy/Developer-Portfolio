@@ -3,26 +3,29 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamically import the Lottie component with `ssr: false` to disable SSR
+// Dynamically import Lottie to avoid SSR issues
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 const AnimationLottie = ({ animationPath, width }) => {
-  const [defaultOptions, setDefaultOptions] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (animationPath) {
-      setDefaultOptions({
-        loop: true,
-        autoplay: true,
-        animationData: animationPath, // Ensure this is a valid JSON object
-        style: {
-          width: width || "95%",
-        },
-      });
-    }
-  }, [animationPath, width]);
+    // Ensures this runs only on the client
+    setIsClient(true);
+  }, []);
 
-  if (!defaultOptions) return null; // Prevent rendering until options are set
+  if (!isClient) {
+    return null; // Render nothing during SSR
+  }
+
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationPath,
+    style: {
+      width: width || "95%", // Dynamically use passed width or fallback
+    },
+  };
 
   return <Lottie {...defaultOptions} />;
 };

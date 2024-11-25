@@ -1,33 +1,41 @@
-import axios from 'axios';
-import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import axios from "axios";
+import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 // Create and configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
+  service: "gmail",
+  host: "smtp.gmail.com",
   port: 587,
-  secure: false, 
+  secure: false,
   auth: {
     user: process.env.EMAIL_ADDRESS,
-    pass: process.env.GMAIL_PASSKEY, 
+    pass: process.env.GMAIL_PASSKEY,
   },
 });
 
-// Helper function to send a message via Telegram
+// const axios = require("axios");
+
 async function sendTelegramMessage(token, chat_id, message) {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
   try {
     const res = await axios.post(url, {
-      text: message,
       chat_id,
+      text: message,
     });
+
     return res.data.ok;
   } catch (error) {
-    console.error('Error sending Telegram message:', error.response?.data || error.message);
-    return false;
+    console.error(
+      "Error sending Telegram message:",
+      error.response?.data || error.message,
+    );
+    throw new Error(
+      error.response?.data?.description || "Failed to send message",
+    );
   }
-};
+}
 
 // HTML email template
 const generateEmailTemplate = (name, email, userMessage) => `
@@ -48,24 +56,24 @@ const generateEmailTemplate = (name, email, userMessage) => `
 // Helper function to send an email via Nodemailer
 async function sendEmail(payload, message) {
   const { name, email, message: userMessage } = payload;
-  
+
   const mailOptions = {
-    from: "Portfolio", 
-    to: process.env.EMAIL_ADDRESS, 
-    subject: `New Message From ${name}`, 
-    text: message, 
-    html: generateEmailTemplate(name, email, userMessage), 
-    replyTo: email, 
+    from: "Portfolio",
+    to: process.env.EMAIL_ADDRESS,
+    subject: `New Message From ${name}`,
+    text: message,
+    html: generateEmailTemplate(name, email, userMessage),
+    replyTo: email,
   };
-  
+
   try {
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error while sending email:', error.message);
+    console.error("Error while sending email:", error.message);
     return false;
   }
-};
+}
 
 export async function POST(request) {
   try {
@@ -76,10 +84,13 @@ export async function POST(request) {
 
     // Validate environment variables
     if (!token || !chat_id) {
-      return NextResponse.json({
-        success: false,
-        message: 'Telegram token or chat ID is missing.',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Telegram token or chat ID is missing.",
+        },
+        { status: 400 },
+      );
     }
 
     const message = `New message from ${name}\n\nEmail: ${email}\n\nMessage:\n\n${userMessage}\n\n`;
@@ -91,21 +102,30 @@ export async function POST(request) {
     const emailSuccess = await sendEmail(payload, message);
 
     if (telegramSuccess && emailSuccess) {
-      return NextResponse.json({
-        success: true,
-        message: 'Message and email sent successfully!',
-      }, { status: 200 });
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Message and email sent successfully!",
+        },
+        { status: 200 },
+      );
     }
 
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to send message or email.',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to send message or email.",
+      },
+      { status: 500 },
+    );
   } catch (error) {
-    console.error('API Error:', error.message);
-    return NextResponse.json({
-      success: false,
-      message: 'Server error occurred.',
-    }, { status: 500 });
+    console.error("API Error:", error.message);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Server error occurred.",
+      },
+      { status: 500 },
+    );
   }
-};
+}
