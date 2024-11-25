@@ -2,7 +2,6 @@ import axios from "axios";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-// Create and configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
@@ -13,8 +12,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_PASSKEY,
   },
 });
-
-// const axios = require("axios");
 
 async function sendTelegramMessage(token, chat_id, message) {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
