@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import axios from "axios";
+import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
   port: 587,
-  secure: false,
+  secure: true,
   auth: {
     user: process.env.EMAIL_ADDRESS,
     pass: process.env.GMAIL_PASSKEY,
@@ -22,6 +22,7 @@ async function sendTelegramMessage(token, chat_id, message) {
       text: message,
     });
 
+    console.log("Telegram response:", res.data); // Log the Telegram response for debugging
     return res.data.ok;
   } catch (error) {
     console.error(
@@ -34,6 +35,7 @@ async function sendTelegramMessage(token, chat_id, message) {
   }
 }
 
+// HTML email template
 const generateEmailTemplate = (name, email, userMessage) => `
   <div style="font-family: Arial, sans-serif; color: #333; padding: 20px; background-color: #f4f4f4;">
     <div style="max-width: 600px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
@@ -49,6 +51,7 @@ const generateEmailTemplate = (name, email, userMessage) => `
   </div>
 `;
 
+// Helper function to send an email via Nodemailer
 async function sendEmail(payload, message) {
   const { name, email, message: userMessage } = payload;
 
@@ -70,13 +73,14 @@ async function sendEmail(payload, message) {
   }
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const payload = await req.json();
+    const payload = await request.json();
     const { name, email, message: userMessage } = payload;
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chat_id = process.env.TELEGRAM_CHAT_ID;
 
+    // Validate environment variables
     if (!token || !chat_id) {
       return NextResponse.json(
         {
@@ -88,6 +92,8 @@ export async function POST(req) {
     }
 
     const message = `New message from ${name}\n\nEmail: ${email}\n\nMessage:\n\n${userMessage}\n\n`;
+
+    console.log("Message to Telegram:", message); // Log message to verify it's correct
 
     // Send Telegram message
     const telegramSuccess = await sendTelegramMessage(token, chat_id, message);
